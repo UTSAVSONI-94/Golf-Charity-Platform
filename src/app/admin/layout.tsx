@@ -1,8 +1,23 @@
 import { ReactNode } from 'react'
 import Link from 'next/link'
 import { LayoutDashboard, Users, Heart, Gift, ShieldCheck, Activity } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server'
+import { redirect } from 'next/navigation'
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+// Add your admin email(s) here
+const ADMIN_EMAILS = ['utsavsonimrj@gmail.com']
+
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Block: not logged in
+  if (!user) redirect('/login')
+
+  // Block: not an admin
+  if (!ADMIN_EMAILS.includes(user.email || '')) {
+    redirect('/dashboard')
+  }
   const menu = [
     { label: "Overview", icon: Activity, href: "/admin" },
     { label: "Users & Subs", icon: Users, href: "/admin/users" },
