@@ -22,7 +22,7 @@ export default function ProofUploadPage() {
         <form onSubmit={handleUpload} className="glass rounded-3xl p-8 space-y-6">
           <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-xl">
             <h3 className="text-amber-400 font-bold mb-1">Pending Payout: $350.50</h3>
-            <p className="text-amber-200/70 text-sm">Draw: August 2026 (Tier 3 Match)</p>
+            <p className="text-amber-200/70 text-sm">Draw: {new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} (Tier 3 Match)</p>
           </div>
 
           <div>

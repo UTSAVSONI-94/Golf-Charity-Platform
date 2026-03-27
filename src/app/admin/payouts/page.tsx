@@ -1,10 +1,17 @@
 import { ShieldCheck, CheckCircle, Search } from 'lucide-react'
 
 export default function AdminPayoutsPage() {
+  const getMonthStr = (offset: number) => {
+    const d = new Date()
+    d.setMonth(d.getMonth() + offset)
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }
+  const todayStr = new Date().toISOString().split('T')[0]
+
   const payouts = [
-    { id: '1', user: "john.doe@example.com", draw: "August 2026", match: "Tier 3", amount: "$350.50", status: "pending", date: "2026-08-02" },
-    { id: '2', user: "jane.smith@example.com", draw: "August 2026", match: "Tier 1", amount: "$10,400.00", status: "pending", date: "2026-08-01" },
-    { id: '3', user: "mike.jones@example.com", draw: "July 2026", match: "Tier 2", amount: "$1,200.00", status: "paid", date: "2026-07-05" },
+    { id: '1', user: "john.doe@example.com", draw: getMonthStr(0), match: "Tier 3", amount: "$350.50", status: "pending", date: todayStr },
+    { id: '2', user: "jane.smith@example.com", draw: getMonthStr(0), match: "Tier 1", amount: "$10,400.00", status: "pending", date: todayStr },
+    { id: '3', user: "mike.jones@example.com", draw: getMonthStr(-1), match: "Tier 2", amount: "$1,200.00", status: "paid", date: todayStr },
   ]
 
   return (
