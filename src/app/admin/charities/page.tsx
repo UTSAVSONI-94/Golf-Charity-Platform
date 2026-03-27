@@ -1,22 +1,21 @@
 import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server'
+import { redirect } from 'next/navigation'
 
-export default function AdminCharitiesPage() {
-  const charities = [
-    { id: 1, name: "Global Clean Water Initiative", featured: true },
-    { id: 2, name: "Youth Sports Foundation", featured: false },
-    { id: 3, name: "Wildlife Conservation Fund", featured: true }
-  ]
+export default async function AdminCharitiesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: charities } = await supabase.from('charities').select('*').order('created_at', { ascending: false })
 
   return (
     <div className="space-y-8 max-w-5xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold mb-2 text-white">Charities</h1>
-          <p className="text-neutral-400">Manage the causes users can donate their subscription percentages to.</p>
+          <p className="text-neutral-400">Manage the secured list of impact causes users can donate via subscription tiers.</p>
         </div>
-        <button className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-          <Plus className="w-5 h-5" /> Add Charity
-        </button>
       </div>
 
       <div className="glass rounded-3xl overflow-hidden">
@@ -25,11 +24,11 @@ export default function AdminCharitiesPage() {
             <tr>
               <th className="p-4 font-semibold text-neutral-300">Name</th>
               <th className="p-4 font-semibold text-neutral-300">Status</th>
-              <th className="p-4 font-semibold text-neutral-300 text-right">Actions</th>
+              <th className="p-4 font-semibold text-neutral-300 mt-0 text-right">Added On</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {charities.map(c => (
+            {charities?.map(c => (
               <tr key={c.id} className="hover:bg-white/5 transition-colors">
                 <td className="p-4 font-medium text-white">{c.name}</td>
                 <td className="p-4">
@@ -39,12 +38,14 @@ export default function AdminCharitiesPage() {
                      <span className="text-xs font-semibold bg-neutral-500/20 text-neutral-400 px-2 py-1 rounded-full border border-neutral-500/30">Standard</span>
                   )}
                 </td>
-                <td className="p-4 flex justify-end gap-2">
-                  <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-emerald-400 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                  <button className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                <td className="p-4 text-right text-neutral-400 text-sm">
+                  {new Date(c.created_at).toLocaleDateString()}
                 </td>
               </tr>
             ))}
+            {(!charities || charities.length === 0) && (
+              <tr><td colSpan={3} className="p-8 text-center text-neutral-500">No active charities found in the database. Add one via Postgres to manage.</td></tr>
+            )}
           </tbody>
         </table>
       </div>

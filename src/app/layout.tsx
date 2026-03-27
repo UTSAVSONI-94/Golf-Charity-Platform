@@ -6,8 +6,8 @@ import Navbar from '@/components/navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Fairway to Heaven - Golf Charity Platform',
-  description: 'Submit your Stableford scores, participate in monthly draws, and support amazing causes.',
+  title: 'ImpactPlay | Competitive Philanthropy',
+  description: 'Join a community of purpose-driven competitors. Your performance fuels our algorithmic impact pool for verified charities.',
 }
 
 export default function RootLayout({

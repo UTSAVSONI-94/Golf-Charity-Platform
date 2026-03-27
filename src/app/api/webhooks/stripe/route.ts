@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 
 // Initialize Stripe (requires STRIPE_SECRET_KEY in env)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2026-03-25.dahlia' as any,
 })
 
 export async function POST(req: Request) {
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted': {
-      const subscription = event.data.object as Stripe.Subscription
+      const subscription = event.data.object as any
       const status = subscription.status
       
       // Determine plan type from interval
@@ -53,6 +53,13 @@ export async function POST(req: Request) {
         
         if (error) {
           console.error("DB Update Error", error)
+        } else if (status === 'active') {
+          // Trigger subscription success email
+          const { data: userData } = await supabase.auth.admin.getUserById(userId)
+          if (userData.user?.email) {
+            const { sendSubscriptionSuccessEmail } = await import('@/lib/email')
+            await sendSubscriptionSuccessEmail(userData.user.email, planType)
+          }
         }
       }
       break
