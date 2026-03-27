@@ -47,10 +47,9 @@ export async function createCheckoutSession(formData: FormData) {
           quantity: 1,
         },
       ],
-      // Use environment host, defaulting to localhost for dev testing
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard/settings?success=Subscription_Active`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/subscribe`,
-      client_reference_id: user.id, // Guaranteed link connecting the Stripe webhook to the Supabase User
+      client_reference_id: user.id,
       subscription_data: {
         metadata: {
           supabase_user_id: user.id
@@ -62,7 +61,13 @@ export async function createCheckoutSession(formData: FormData) {
       redirect(session.url)
     }
   } catch (err: any) {
-    // If STRIPE_SECRET_KEY is a placeholder, Stripe will reject the request. We securely trap and surface that to the UI.
-    redirect(`/subscribe?error=${encodeURIComponent('Stripe Configuration Missing. Checkout requires a valid Secret Key.')}`)
+    // CRITICAL: Next.js redirect() throws a NEXT_REDIRECT error internally.
+    // We must re-throw it or the redirect gets swallowed by our catch block.
+    if (err?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw err
+    }
+    const message = err?.message || 'Unknown Stripe error'
+    console.error('Stripe Checkout Error:', message)
+    redirect(`/subscribe?error=${encodeURIComponent(message)}`)
   }
 }
