@@ -8,9 +8,9 @@ export default function WinningsPage() {
   }
 
   const history = [
-    { id: '1', date: getMonthStr(1), draw_numbers: [4, 12, 23, 31, 42], my_matches: 4, prize: '$1,240.00', status: 'paid' },
-    { id: '2', date: getMonthStr(0), draw_numbers: [7, 14, 25, 33, 41], my_matches: 2, prize: '$0.00', status: 'none' },
-    { id: '3', date: getMonthStr(-1), draw_numbers: [2, 11, 22, 36, 45], my_matches: 3, prize: '$350.50', status: 'pending' },
+    { id: '1', date: getMonthStr(-1), draw_numbers: [4, 12, 23, 31, 42], my_matches: 4, prize: '$1,240.00', status: 'pending' },
+    { id: '2', date: getMonthStr(-2), draw_numbers: [7, 14, 25, 33, 41], my_matches: 2, prize: '$0.00', status: 'none' },
+    { id: '3', date: getMonthStr(-3), draw_numbers: [2, 11, 22, 36, 45], my_matches: 3, prize: '$350.50', status: 'paid' },
   ]
 
   return (
