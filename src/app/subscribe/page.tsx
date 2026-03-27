@@ -1,10 +1,13 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Check, ArrowRight } from 'lucide-react'
-import { useState } from 'react'
+import { Check, ArrowRight, AlertTriangle } from 'lucide-react'
+import { useState, use } from 'react'
+import { createCheckoutSession } from './actions'
 
-export default function SubscribePage() {
+export default function SubscribePage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const resolvedParams = use(searchParams);
+  const errorMsg = resolvedParams.error;
   const [isYearly, setIsYearly] = useState(false)
 
   const plans = [
@@ -55,6 +58,13 @@ export default function SubscribePage() {
         </div>
       </div>
 
+      {errorMsg && (
+        <div className="w-full max-w-4xl mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center gap-3 text-red-400 font-medium">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <p>{errorMsg}</p>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
         {plans.map((plan, i) => (
           <motion.div 
@@ -86,9 +96,13 @@ export default function SubscribePage() {
               ))}
             </ul>
 
-            <button className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${plan.popular ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
-              Subscribe to {plan.name} <ArrowRight className="w-4 h-4" />
-            </button>
+            <form action={createCheckoutSession}>
+              <input type="hidden" name="planName" value={plan.name} />
+              <input type="hidden" name="isYearly" value={isYearly.toString()} />
+              <button type="submit" className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${plan.popular ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
+                Subscribe to {plan.name} <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
           </motion.div>
         ))}
       </div>
