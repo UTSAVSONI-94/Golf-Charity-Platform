@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
 // Only these emails can access /admin
-const ADMIN_EMAILS = ['utsavsonimrj@gmail.com']
+const ADMIN_EMAILS = ['utsavsonii94@gmail.com']
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
