@@ -97,14 +97,29 @@ export async function publishDraw(formData: FormData) {
     }
   }
 
-  // 5. Calculate prize pool from active subscriptions
-  const { count: activeSubs } = await supabase
+  // 5. Calculate prize pool from active subscriptions, accounting for charity splits
+  const { data: activeSubs } = await supabase
     .from('subscriptions')
-    .select('*', { count: 'exact', head: true })
+    .select('user_id')
     .eq('status', 'active')
 
-  const monthlyRevenue = (activeSubs || 0) * 9.99
-  const totalPool = monthlyRevenue * 0.40 // 40% of revenue goes to prize pool
+  const BASE_PRICE = 9.99
+  let totalCharityContribution = 0
+  let totalPrizeRevenue = 0
+
+  // For each active subscriber, deduct their charity % before adding to prize pool
+  for (const sub of activeSubs || []) {
+    const { data: { user: subUser } } = await supabase.auth.admin.getUserById(sub.user_id)
+    const charityPct = subUser?.user_metadata?.charity_percentage || 10 // Default 10% minimum
+    const charityAmount = BASE_PRICE * (charityPct / 100)
+    const prizeAmount = BASE_PRICE - charityAmount
+
+    totalCharityContribution += charityAmount
+    totalPrizeRevenue += prizeAmount
+  }
+
+  // Prize pool = revenue after charity deductions, split for draws
+  const totalPool = totalPrizeRevenue * 0.50 // 50% of post-charity revenue goes to prize pool
 
   // Check for rollover from previous months
   const { data: rollovers } = await (supabase as any)
@@ -137,6 +152,6 @@ export async function publishDraw(formData: FormData) {
     await (supabase as any).from('jackpot_rollover').delete().neq('draw_id', draw.id)
   }
 
-  const resultStr = `Published! T1(5match):${tier1Winners} T2(4match):${tier2Winners} T3(3match):${tier3Winners} Pool:$${grandPool.toFixed(2)} Rollover:$${rolloverAmount.toFixed(2)}`
+  const resultStr = `Published! T1(5match):${tier1Winners} T2(4match):${tier2Winners} T3(3match):${tier3Winners} | Prize Pool:$${grandPool.toFixed(2)} | Charity Total:$${totalCharityContribution.toFixed(2)} | Rollover:$${rolloverAmount.toFixed(2)}`
   redirect(`/admin/draws?success=${encodeURIComponent(resultStr)}`)
 }

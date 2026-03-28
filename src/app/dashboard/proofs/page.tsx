@@ -1,55 +1,135 @@
-'use client'
+import { Upload, FileUp, CheckCircle, AlertCircle, Clock, XCircle } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server'
+import { redirect } from 'next/navigation'
+import { submitProof } from './actions'
 
-import { Upload, FileUp, CheckCircle } from 'lucide-react'
-import { useState } from 'react'
+export default async function ProofUploadPage({ searchParams }: { searchParams: Promise<{ error?: string, success?: string }> }) {
+  const params = await searchParams
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
-export default function ProofUploadPage() {
-  const [uploaded, setUploaded] = useState(false)
+  const metadata = user.user_metadata || {}
+  const proofStatus = metadata.proof_status || null // null | 'pending_review' | 'approved' | 'paid' | 'rejected'
+  const proofSubmitted = metadata.proof_submitted || false
 
-  const handleUpload = (e: React.FormEvent) => {
-    e.preventDefault()
-    setUploaded(true)
-  }
+  // Check if user has any active subscription (and thus could have winnings)
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('status')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
 
   return (
     <div className="space-y-8 max-w-3xl">
       <div>
-        <h1 className="text-3xl font-extrabold mb-2">Upload Proof of Receipt</h1>
-        <p className="text-neutral-400">If you have won a prize, you must upload a screenshot or PDF receipt of your payout to finalize the transaction. Transparency is key to our charity mission.</p>
+        <h1 className="text-3xl font-extrabold mb-2">Proof of Receipt</h1>
+        <p className="text-neutral-400">If you won a prize in the monthly draw, upload your proof of receipt so the admin can verify and finalize your payout.</p>
       </div>
 
-      {!uploaded ? (
-        <form onSubmit={handleUpload} className="glass rounded-3xl p-8 space-y-6">
-          <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-            <h3 className="text-amber-400 font-bold mb-1">Pending Payout: $350.50</h3>
-            <p className="text-amber-200/70 text-sm">Draw: {new Date(new Date().setMonth(new Date().getMonth() - 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} (Tier 3 Match)</p>
+      {params.error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <p className="text-sm font-medium">{params.error}</p>
+        </div>
+      )}
+
+      {params.success && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3 text-emerald-400">
+          <CheckCircle className="w-5 h-5 shrink-0" />
+          <p className="text-sm font-medium">{params.success}</p>
+        </div>
+      )}
+
+      {/* Status Card */}
+      {proofSubmitted && (
+        <div className={`glass rounded-3xl p-6 border ${
+          proofStatus === 'approved' || proofStatus === 'paid'
+            ? 'border-emerald-500/30 bg-emerald-950/10'
+            : proofStatus === 'rejected'
+            ? 'border-red-500/30 bg-red-950/10'
+            : 'border-amber-500/30 bg-amber-950/10'
+        }`}>
+          <div className="flex items-center gap-3 mb-3">
+            {proofStatus === 'approved' || proofStatus === 'paid' ? (
+              <CheckCircle className="w-6 h-6 text-emerald-400" />
+            ) : proofStatus === 'rejected' ? (
+              <XCircle className="w-6 h-6 text-red-400" />
+            ) : (
+              <Clock className="w-6 h-6 text-amber-400" />
+            )}
+            <h2 className="text-xl font-bold text-white">
+              {proofStatus === 'paid' && 'Payout Complete ✓'}
+              {proofStatus === 'approved' && 'Proof Approved — Payout Processing'}
+              {proofStatus === 'pending_review' && 'Proof Under Review'}
+              {proofStatus === 'rejected' && 'Proof Rejected — Please Resubmit'}
+            </h2>
+          </div>
+          <p className="text-sm text-neutral-400">
+            Submitted on {new Date(metadata.proof_submitted_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
+          {metadata.proof_notes && (
+            <p className="text-sm text-neutral-300 mt-2">Your notes: "{metadata.proof_notes}"</p>
+          )}
+          {metadata.admin_feedback && (
+            <p className="text-sm text-amber-300 mt-2 font-medium">Admin feedback: "{metadata.admin_feedback}"</p>
+          )}
+        </div>
+      )}
+
+      {/* Upload Form - Show if no proof submitted or rejected */}
+      {(!proofSubmitted || proofStatus === 'rejected') && (
+        <form action={submitProof} className="glass rounded-3xl p-8 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">Proof Reference</label>
+            <input
+              type="text"
+              name="proofUrl"
+              placeholder="Paste receipt URL, transaction ID, or reference number"
+              className="w-full bg-neutral-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+              required
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">Proof File</label>
-            <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/20 rounded-2xl cursor-pointer hover:bg-white/5 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <FileUp className="w-10 h-10 text-neutral-400 mb-3" />
-                <p className="mb-2 text-sm text-neutral-300"><span className="font-semibold text-emerald-400">Click to upload</span> or drag and drop</p>
-                <p className="text-xs text-neutral-500">PNG, JPG or PDF (MAX. 5MB)</p>
-              </div>
-              <input type="file" className="hidden" required />
-            </label>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">Additional Notes (Optional)</label>
+            <textarea
+              name="notes"
+              placeholder="Any additional context about your payout..."
+              rows={3}
+              className="w-full bg-neutral-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all resize-none"
+            />
           </div>
 
-          <button type="submit" className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold flex items-center justify-center gap-2 transition-all">
+          <button type="submit" className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)]">
             <Upload className="w-5 h-5" /> Submit Proof
           </button>
         </form>
-      ) : (
-        <div className="glass rounded-3xl p-10 text-center space-y-4 border-emerald-500/30">
-          <div className="mx-auto w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
-            <CheckCircle className="w-10 h-10 text-emerald-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white">Proof Submitted Successfully</h2>
-          <p className="text-neutral-400">Your proof is being reviewed by the admin team. Your payout will be marked as Complete shortly.</p>
-        </div>
       )}
+
+      {/* Payment Tracking Timeline */}
+      <div className="glass rounded-3xl p-6">
+        <h2 className="text-lg font-bold text-white mb-4">Verification Pipeline</h2>
+        <div className="space-y-4">
+          {[
+            { step: '1', label: 'Win Draw', desc: 'Match 3+ numbers in the monthly draw', done: true },
+            { step: '2', label: 'Submit Proof', desc: 'Upload your receipt or reference', done: proofSubmitted },
+            { step: '3', label: 'Admin Review', desc: 'Admin verifies your submission', done: proofStatus === 'approved' || proofStatus === 'paid' },
+            { step: '4', label: 'Payout Complete', desc: 'Funds transferred to your account', done: proofStatus === 'paid' },
+          ].map((s, i) => (
+            <div key={i} className="flex items-start gap-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${s.done ? 'bg-emerald-500 text-white' : 'bg-white/10 text-neutral-400'}`}>
+                {s.done ? '✓' : s.step}
+              </div>
+              <div>
+                <p className={`font-semibold ${s.done ? 'text-emerald-400' : 'text-neutral-300'}`}>{s.label}</p>
+                <p className="text-xs text-neutral-500">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

@@ -4,20 +4,18 @@ import { LayoutDashboard, Users, Heart, Gift, ShieldCheck, Activity } from 'luci
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 
-// Add your admin email(s) here
+// Only these emails can access /admin
 const ADMIN_EMAILS = ['utsavsonimrj@gmail.com']
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Block: not logged in
   if (!user) redirect('/login')
-
-  // Block: not an admin
-  if (!ADMIN_EMAILS.includes(user.email || '')) {
+  if (!ADMIN_EMAILS.some(e => e.toLowerCase() === (user.email || '').toLowerCase())) {
     redirect('/dashboard')
   }
+
   const menu = [
     { label: "Overview", icon: Activity, href: "/admin" },
     { label: "Users & Subs", icon: Users, href: "/admin/users" },
